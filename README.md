@@ -27,6 +27,7 @@ jenkins ALL=(ALL) NOPASSWD:ALL
 Probar que usuario jenkins no pide password para sudo
 
 sudo su - jenkins
+
 sudo cat /etc/shadow
 
 (si pide password, revisar la configuracion)
