@@ -9,10 +9,11 @@ pipeline {
         SECURITY_GROUP_NAME = 'JenkinsSecurityGroup'
 
         // Credenciales AWS
-        AWS_ACCESS_KEY_ID = "ASIAUXLKVPSNZKRBXC7F"
-        AWS_SECRET_ACCESS_KEY = "/vp2VWvgfU3npKnEaxf3qWXsy6b1GKX0rj18FGvW"
-        AWS_SESSION_TOKEN = "IQoJb3JpZ2luX2VjEJz//////////wEaCXVzLXdlc3QtMiJHMEUCIEmMJQT3RheJFSDXvC0WY4+xa0iQZcdUFgwOOKSxK4gwAiEAmRnatteLGVLklYzhc8QbV4qKzmM+pecZAbQEeWRg8n8qqQII5P//////////ARABGgwzMjUwMzA2MDgwMjciDJECCQhOjACJfvqpgCr9ARCqjBytJvSl3mK0UVLGIh+6QyEnP0m8DqeRee6hBCKxeYfoVDVqS/YeMcS1+Iqv6izmjFvQ+mOz2I49dL4RRE6um6ah+s9gImifioa3YQ+SCydLcPRncVVRNMPFHgDazeLwvAGkdnmgkTameA4hIUhvF0AUeOSofvKxzBJIuYbl+omEtmhSRkZaJgDdY6qVgVA7cRQ/d3rfINpxkmei19zxre+co/+DZD169Rrywkr8T6NQU8Dy6jd+tftd4tlld3np7yQMeiIntmaygyJnY4og6AY/8985KqKT3PhRWaU7cWVWPcz8eEoRdNeRI5Mw4V7hDYZtCwex3OQU5qYw67/OvgY6nQFnFF598jJVzuWuHHOeeNP3Qkc9uvHz00fwrWySNKeLplLXPDcuOmq1VhcUMtYT619MbUkdZTmaqUrKx48zjgj6XubN6EyM+5w8ioPXBIdnlYE4osXyG0m+y5T/kXzllMZH4Uo6IlJ5bVLdQOv0/TH0FyLUfQVDd7NxJy1hlqmitI9NH7XtjEpfp7qDCbPKZDeTIf48gKfUKchg83VZ"
-    }
+       // Credenciales AWS (mismas que el pipeline de creación)
+        AWS_ACCESS_KEY_ID = "mi id"
+        AWS_SECRET_ACCESS_KEY = "mi secret"
+        AWS_SESSION_TOKEN = "mi token"
+        }
 
     stages {
         stage('Instalar AWS CLI desde Amazon') {
