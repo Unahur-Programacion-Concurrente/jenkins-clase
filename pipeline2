@@ -1,0 +1,66 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = 'us-east-1'
+
+        // Credenciales AWS
+        AWS_ACCESS_KEY_ID = "mi id"
+        AWS_SECRET_ACCESS_KEY = "mi secret"
+        AWS_SESSION_TOKEN = "mi token"
+    }
+
+    stages {
+        stage('Instalar AWS CLI desde Amazon') {
+            steps {
+                sh '''
+                echo "Descargando e instalando AWS CLI desde Amazon..."
+
+                # Eliminar versiones previas
+                sudo rm -rf /usr/local/aws-cli awscliv2.zip aws/
+
+                # Descargar AWS CLI v2
+                curl -fSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" || { echo "Error en la descarga"; exit 1; }
+
+                # Instalar unzip si no está presente
+                if ! command -v unzip &> /dev/null; then
+                    sudo apt update && sudo apt install -y unzip
+                fi
+
+                # Extraer AWS CLI sin confirmaciones
+                unzip -o awscliv2.zip || { echo "Error al descomprimir AWS CLI"; exit 1; }
+
+                # Instalar AWS CLI
+                sudo ./aws/install || { echo "Error al instalar AWS CLI"; exit 1; }
+
+                # Verificar instalación
+                aws --version || { echo "AWS CLI no está instalado correctamente"; exit 1; }
+                '''
+            }
+        }
+
+        stage('Configurar Credenciales AWS') {
+            steps {
+                sh '''
+                echo "Configurando credenciales AWS..."
+
+                export AWS_ACCESS_KEY_ID='${AWS_ACCESS_KEY_ID}'
+                export AWS_SECRET_ACCESS_KEY='${AWS_SECRET_ACCESS_KEY}'
+                export AWS_SESSION_TOKEN='${AWS_SESSION_TOKEN}'
+
+                # Verificar autenticación
+                aws sts get-caller-identity || { echo "Error en la autenticación de AWS"; exit 1; }
+                '''
+            }
+        }
+
+        stage('Listar Instancias EC2') {
+            steps {
+                sh '''
+                echo "Listando instancias EC2 en la región ${AWS_REGION}..."
+                aws ec2 describe-instances --query 'Reservations[*].Instances[*].{ID:InstanceId,State:State.Name,PublicIP:PublicIpAddress}' --output table
+                '''
+            }
+        }
+    }
+}
