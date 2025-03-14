@@ -1,0 +1,96 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = 'us-east-1'
+        SECURITY_GROUP_NAME = 'JenkinsSecurityGroup'
+
+        // Credenciales AWS (mismas que el pipeline de creación)
+        AWS_ACCESS_KEY_ID = "ASIAUXLKVPSNZKRBXC7F"
+        AWS_SECRET_ACCESS_KEY = "/vp2VWvgfU3npKnEaxf3qWXsy6b1GKX0rj18FGvW"
+        AWS_SESSION_TOKEN = "IQoJb3JpZ2luX2VjEJz//////////wEaCXVzLXdlc3QtMiJHMEUCIEmMJQT3RheJFSDXvC0WY4+xa0iQZcdUFgwOOKSxK4gwAiEAmRnatteLGVLklYzhc8QbV4qKzmM+pecZAbQEeWRg8n8qqQII5P//////////ARABGgwzMjUwMzA2MDgwMjciDJECCQhOjACJfvqpgCr9ARCqjBytJvSl3mK0UVLGIh+6QyEnP0m8DqeRee6hBCKxeYfoVDVqS/YeMcS1+Iqv6izmjFvQ+mOz2I49dL4RRE6um6ah+s9gImifioa3YQ+SCydLcPRncVVRNMPFHgDazeLwvAGkdnmgkTameA4hIUhvF0AUeOSofvKxzBJIuYbl+omEtmhSRkZaJgDdY6qVgVA7cRQ/d3rfINpxkmei19zxre+co/+DZD169Rrywkr8T6NQU8Dy6jd+tftd4tlld3np7yQMeiIntmaygyJnY4og6AY/8985KqKT3PhRWaU7cWVWPcz8eEoRdNeRI5Mw4V7hDYZtCwex3OQU5qYw67/OvgY6nQFnFF598jJVzuWuHHOeeNP3Qkc9uvHz00fwrWySNKeLplLXPDcuOmq1VhcUMtYT619MbUkdZTmaqUrKx48zjgj6XubN6EyM+5w8ioPXBIdnlYE4osXyG0m+y5T/kXzllMZH4Uo6IlJ5bVLdQOv0/TH0FyLUfQVDd7NxJy1hlqmitI9NH7XtjEpfp7qDCbPKZDeTIf48gKfUKchg83VZ"
+    }
+
+    stages {
+        stage('Cargar Credenciales AWS Manualmente') {
+            steps {
+                sh """
+                echo "Configurando credenciales AWS manualmente..."
+                
+                export AWS_ACCESS_KEY_ID='${AWS_ACCESS_KEY_ID}'
+                export AWS_SECRET_ACCESS_KEY='${AWS_SECRET_ACCESS_KEY}'
+                export AWS_SESSION_TOKEN='${AWS_SESSION_TOKEN}'
+
+                # Verificar autenticación
+                aws sts get-caller-identity || { echo "Error en la autenticación de AWS"; exit 1; }
+                """
+            }
+        }
+
+        stage('Detener y Eliminar la Instancia EC2') {
+            steps {
+                sh """
+                if [ -f "instance_id.txt" ]; then
+                    INSTANCE_ID=\$(cat instance_id.txt)
+                    echo "Deteniendo y eliminando la instancia EC2: \$INSTANCE_ID"
+                    
+                    # Detener la instancia
+                    aws ec2 stop-instances --instance-ids \$INSTANCE_ID || echo "Error al detener la instancia, puede que ya esté detenida."
+
+                    # Esperar a que se detenga completamente
+                    aws ec2 wait instance-stopped --instance-ids \$INSTANCE_ID || echo "Error al esperar que la instancia se detenga."
+
+                    # Eliminar la instancia
+                    aws ec2 terminate-instances --instance-ids \$INSTANCE_ID || echo "Error al eliminar la instancia."
+                    
+                    echo "Instancia eliminada."
+                else
+                    echo "No se encontró el archivo instance_id.txt. No hay instancia para eliminar."
+                fi
+                """
+            }
+        }
+
+        stage('Eliminar Security Group') {
+            steps {
+                sh """
+                if [ -f "security_group_id.txt" ]; then
+                    SECURITY_GROUP_ID=\$(cat security_group_id.txt)
+                    echo "Intentando eliminar el Security Group: \$SECURITY_GROUP_ID"
+
+                    # Verificar si el Security Group sigue en uso
+                    ATTACHED_INSTANCES=\$(aws ec2 describe-instances --filters "Name=instance.group-id,Values=\$SECURITY_GROUP_ID" --query "Reservations[*].Instances[*].InstanceId" --output text)
+
+                    if [ -z "\$ATTACHED_INSTANCES" ]; then
+                        # Eliminar el Security Group solo si no está en uso
+                        aws ec2 delete-security-group --group-id \$SECURITY_GROUP_ID || echo "Error al eliminar el Security Group."
+                        echo "Security Group eliminado."
+                    else
+                        echo "El Security Group sigue en uso por instancias: \$ATTACHED_INSTANCES"
+                    fi
+                else
+                    echo "No se encontró el archivo security_group_id.txt. No hay Security Group para eliminar."
+                fi
+                """
+            }
+        }
+
+        stage('Verificar Estado Final de los Recursos') {
+            steps {
+                sh """
+                echo "Verificando el estado final de los recursos..."
+
+                if [ -f "instance_id.txt" ]; then
+                    INSTANCE_ID=\$(cat instance_id.txt)
+                    aws ec2 describe-instances --instance-ids \$INSTANCE_ID --query 'Reservations[*].Instances[*].{ID:InstanceId,State:State.Name}' --output table || echo "Instancia no encontrada."
+                fi
+
+                if [ -f "security_group_id.txt" ]; then
+                    SECURITY_GROUP_ID=\$(cat security_group_id.txt)
+                    aws ec2 describe-security-groups --group-ids \$SECURITY_GROUP_ID --output table || echo "Security Group no encontrado."
+                fi
+                """
+            }
+        }
+    }
+}
