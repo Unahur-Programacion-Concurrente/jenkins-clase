@@ -49,9 +49,9 @@ pipeline {
                 sh """
                 echo "Configurando credenciales AWS manualmente..."
                 
-                export AWS_ACCESS_KEY_ID='${AWS_ACCESS_KEY_ID}'
-                export AWS_SECRET_ACCESS_KEY='${AWS_SECRET_ACCESS_KEY}'
-                export AWS_SESSION_TOKEN='${AWS_SESSION_TOKEN}'
+                export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
+                export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
+                export AWS_SESSION_TOKEN="${AWS_SESSION_TOKEN}"
 
                 # Verificar autenticación
                 aws sts get-caller-identity || { echo "Error en la autenticación de AWS"; exit 1; }
